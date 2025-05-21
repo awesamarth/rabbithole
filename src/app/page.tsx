@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import dynamic from 'next/dynamic';
+import { useTheme } from "next-themes";
+
 
 // Sigma imports
 import Graph from "graphology";
@@ -126,6 +128,7 @@ const GraphLoader = dynamic(
     const { useLoadGraph, useSigma } = require("@react-sigma/core");
     const Graph = require("graphology").default;
     const { useEffect } = require("react");
+    const { useTheme } = require("next-themes");
 
     return function GraphLoaderComponent({ selectedResult, similarResults, onNodeClick }: {
       selectedResult: SearchResult;
@@ -134,12 +137,19 @@ const GraphLoader = dynamic(
     }) {
       const loadGraph = useLoadGraph();
       const sigma = useSigma();
+      const { theme, resolvedTheme } = useTheme();
+
+      // Check if we're in dark mode
+      const isDark = resolvedTheme === 'dark';
 
       useEffect(() => {
         const existingGraph = sigma.getGraph();
-
-        // Clear the entire graph first
         existingGraph.clear();
+
+        // Theme-aware colors
+        const centerNodeColor = isDark ? "#60a5fa" : "#4361ee"; // Brighter blue for dark mode
+        const similarNodeColor = isDark ? "#7dd3fc" : "#4cc9f0"; // Light cyan for dark mode
+        const edgeColor = isDark ? "#6b7280" : "#E5E5E5"; // Medium gray for dark mode
 
         // Add the selected result as the center node
         existingGraph.addNode(selectedResult.id, {
@@ -147,13 +157,11 @@ const GraphLoader = dynamic(
           x: 0,
           y: 0,
           size: 20,
-          color: "#4361ee",
+          color: centerNodeColor,
         });
 
-        // Add similar results as surrounding nodes
         const radius = 2;
         similarResults.forEach((similar, index) => {
-          // Check if node already exists before adding (extra safety)
           if (!existingGraph.hasNode(similar.id)) {
             const angle = (index * 2 * Math.PI) / similarResults.length;
             existingGraph.addNode(similar.id, {
@@ -161,14 +169,13 @@ const GraphLoader = dynamic(
               x: Math.cos(angle) * radius,
               y: Math.sin(angle) * radius,
               size: 15,
-              color: "#4cc9f0",
+              color: similarNodeColor,
             });
           }
 
-          // Check if edge already exists before adding
           if (!existingGraph.hasEdge(selectedResult.id, similar.id)) {
             existingGraph.addEdge(selectedResult.id, similar.id, {
-              color: "#E5E5E5",
+              color: edgeColor,
               size: Math.max(1, similar.score * 2),
             });
           }
@@ -180,14 +187,13 @@ const GraphLoader = dynamic(
           }
         };
 
-        // Remove existing listeners before adding new ones
         sigma.off("clickNode", handleClick);
         sigma.on("clickNode", handleClick);
 
         return () => {
           sigma.off("clickNode", handleClick);
         };
-      }, [selectedResult, similarResults, sigma, onNodeClick]);
+      }, [selectedResult, similarResults, sigma, onNodeClick, isDark]);
 
       return null;
     };
@@ -212,6 +218,8 @@ export default function Home() {
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [similarResults, setSimilarResults] = useState<SearchResult[]>([]);
   const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,10 +391,17 @@ export default function Home() {
                   </div>
                 ) : (
                   <SigmaContainer
-                    style={{ height: "100%", width: "100%" }}
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      backgroundColor: isDark ? '#1a1a1a' : '#ffffff'
+                    }}
                     settings={{
-                      defaultNodeColor: "#4361ee",
-                      defaultEdgeColor: "#E5E5E5",
+                      defaultNodeColor: isDark ? "#60a5fa" : "#4361ee",
+                      defaultEdgeColor: isDark ? "#6b7280" : "#E5E5E5",
+                      labelColor: {
+                        color: isDark ? "#06b6d4" : "#000000"
+                      },
                       renderLabels: true,
                       renderEdgeLabels: false,
                       enableEdgeEvents: false,
