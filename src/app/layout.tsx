@@ -13,7 +13,7 @@ const newsreader = Newsreader({
 
 export const metadata: Metadata = {
   title: "Rabbithole | Explore Connected Knowledge",
-  description: "Discover unexpected connections between topics using Exa's powerful semantic search",
+  description: "Discover unexpected connections between topics using Exa's powerful search",
 };
 
 export default function RootLayout({

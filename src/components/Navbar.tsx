@@ -9,7 +9,7 @@ export default function Navbar() {
   const pathname = usePathname();
   
   return (
-    <header className="border-b fixed top-0 flex w-full">
+    <header className="border-b z-50  bg-background   fixed top-0 flex w-full">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center">
           <Link href="/" className="flex items-center">
@@ -48,18 +48,7 @@ export default function Navbar() {
           </Link>
         </div>
         <nav className="flex items-center space-x-4">
-          <Link
-            href="/about"
-            className={`text-sm ${pathname === "/about" ? "font-semibold" : ""}`}
-          >
-            About
-          </Link>
-          <Link
-            href="/how-it-works"
-            className={`text-sm ${pathname === "/how-it-works" ? "font-semibold" : ""}`}
-          >
-            How it Works
-          </Link>
+          
           <ThemeToggle />
         </nav>
       </div>

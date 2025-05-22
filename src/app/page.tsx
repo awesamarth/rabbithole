@@ -28,99 +28,49 @@ type SearchResult = {
   favicon?: string;
 };
 
-// Mock API functions (same as before)
-const mockSearch = async (searchQuery: string): Promise<SearchResult[]> => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
+// Replace the mock functions with these:
+const searchWithExa = async (searchQuery: string): Promise<SearchResult[]> => {
+  try {
+    const response = await fetch('/api/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query: searchQuery }),
+    });
 
-  return [
-    {
-      id: "https://example.com/article1",
-      title: "Understanding Next.js and React",
-      url: "https://example.com/article1",
-      publishedDate: "2024-04-15T00:00:00.000Z",
-      author: "Jane Developer",
-      score: 0.95,
-      text: "Next.js is a powerful framework for building React applications with server-side rendering capabilities...",
-      favicon: "https://example.com/favicon.ico"
-    },
-    {
-      id: "https://example.com/article2",
-      title: "Modern Web Development Practices",
-      url: "https://example.com/article2",
-      publishedDate: "2024-03-10T00:00:00.000Z",
-      author: "John Coder",
-      score: 0.87,
-      text: "Today's web development landscape requires knowledge of various tools and frameworks...",
-      favicon: "https://example.com/favicon.ico"
-    },
-    {
-      id: "https://example.com/article3",
-      title: "TypeScript Best Practices",
-      url: "https://example.com/article3",
-      publishedDate: "2024-02-20T00:00:00.000Z",
-      author: "Sarah TypeScript",
-      score: 0.82,
-      text: "TypeScript adds static typing to JavaScript, enabling better tooling and developer experience...",
-      favicon: "https://example.com/favicon.ico"
-    },
-    {
-      id: "https://example.com/article4",
-      title: "Tailwind CSS for Rapid UI Development",
-      url: "https://example.com/article4",
-      publishedDate: "2024-01-05T00:00:00.000Z",
-      author: "Design Team",
-      score: 0.79,
-      text: "Tailwind CSS provides utility classes that enable rapid UI development without leaving your HTML...",
-      favicon: "https://example.com/favicon.ico"
-    },
-    {
-      id: "https://example.com/article5",
-      title: "State Management in React Applications",
-      url: "https://example.com/article5",
-      publishedDate: "2023-12-12T00:00:00.000Z",
-      author: "React Community",
-      score: 0.76,
-      text: "Managing state effectively is crucial for building complex React applications that scale well...",
-      favicon: "https://example.com/favicon.ico"
+    if (!response.ok) {
+      throw new Error('Search failed');
     }
-  ];
+
+    const data = await response.json();
+    return data.results;
+  } catch (error) {
+    console.error('Search error:', error);
+    return [];
+  }
 };
 
-const mockFindSimilar = async (url: string): Promise<SearchResult[]> => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
+const findSimilarWithExa = async (url: string): Promise<SearchResult[]> => {
+  try {
+    const response = await fetch('/api/find-similar', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
+    });
 
-  return [
-    {
-      id: "https://example.com/related1",
-      title: "Advanced React Patterns",
-      url: "https://example.com/related1",
-      publishedDate: "2024-03-05T00:00:00.000Z",
-      author: "React Expert",
-      score: 0.88,
-      text: "This article explores advanced patterns for React component composition and state management...",
-      favicon: "https://example.com/favicon.ico"
-    },
-    {
-      id: "https://example.com/related2",
-      title: "Server Components in Next.js",
-      url: "https://example.com/related2",
-      publishedDate: "2024-02-28T00:00:00.000Z",
-      author: "Next.js Team",
-      score: 0.85,
-      text: "Server Components represent a paradigm shift in how we build React applications with Next.js...",
-      favicon: "https://example.com/favicon.ico"
-    },
-    {
-      id: "https://example.com/related3",
-      title: "React Performance Optimization",
-      url: "https://example.com/related3",
-      publishedDate: "2024-01-20T00:00:00.000Z",
-      author: "Performance Guru",
-      score: 0.81,
-      text: "Learn how to identify and fix performance bottlenecks in your React applications...",
-      favicon: "https://example.com/favicon.ico"
+    if (!response.ok) {
+      throw new Error('Find similar failed');
     }
-  ];
+
+    const data = await response.json();
+    return data.results;
+  } catch (error) {
+    console.error('Find similar error:', error);
+    return [];
+  }
 };
 
 const GraphLoader = dynamic(
@@ -218,6 +168,8 @@ export default function Home() {
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [similarResults, setSimilarResults] = useState<SearchResult[]>([]);
   const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [similarError, setSimilarError] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
@@ -226,13 +178,15 @@ export default function Home() {
     if (!query.trim()) return;
 
     setIsSearching(true);
+    setSearchError(null);
+    setSelectedResult(null);      
+    setSimilarResults([]);
 
     try {
-      const results = await mockSearch(query);
+      const results = await searchWithExa(query);
       setSearchResults(results);
-
-      setSelectedResult(null);
-      setSimilarResults([]);
+    } catch (error) {
+      setSearchError('Failed to search. Please try again.');
     } finally {
       setIsSearching(false);
     }
@@ -244,10 +198,13 @@ export default function Home() {
 
     setSelectedResult(result);
     setIsLoadingSimilar(true);
+    setSimilarError(null);
 
     try {
-      const similar = await mockFindSimilar(result.url);
+      const similar = await findSimilarWithExa(result.url);
       setSimilarResults(similar);
+    } catch (error) {
+      setSimilarError('Failed to find similar content.');
     } finally {
       setIsLoadingSimilar(false);
     }
@@ -276,8 +233,8 @@ export default function Home() {
         <h1 className="font-[family-name:var(--font-newsreader)] text-4xl md:text-5xl font-bold mb-4 pt-4">
           <span className="text-blue-600 mt-4">Rabbithole</span>
         </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Discover unexpected connections between topics using Exa&apos;s powerful semantic search
+        <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          Discover unexpected connections between topics using Exa&apos;s powerful search
         </p>
       </div>
 
@@ -323,10 +280,10 @@ export default function Home() {
                 <CardContent className="p-4">
                   <div className="flex items-start gap-2">
                     {result.favicon && (
-                      <img src={result.favicon} alt="" className="w-5 h-5 mt-1" />
+                      <img src={result.favicon} alt="" className="w-5 h-5 mt-1 flex-shrink-0" />
                     )}
-                    <div>
-                      <h3 className="font-medium">{result.title}</h3>
+                    <div className="flex-1 min-w-0"> {/* Added flex-1 and min-w-0 */}
+                      <h3 className="font-medium break-words">{result.title}</h3> {/* Added break-words */}
                       <p className="text-sm text-muted-foreground truncate">{result.url}</p>
                       {result.publishedDate && (
                         <Badge variant="outline" className="mt-2">
@@ -369,7 +326,11 @@ export default function Home() {
 
                 <div className="prose dark:prose-invert max-w-none">
                   {selectedResult.text ? (
-                    <p>{selectedResult.text}</p>
+                    <div className="max-h-96 overflow-y-auto border rounded-lg p-4 bg-muted/10">
+                      <p className="whitespace-pre-wrap leading-relaxed">
+                        {selectedResult.text}
+                      </p>
+                    </div>
                   ) : (
                     <Skeleton className="h-24 w-full" />
                   )}
